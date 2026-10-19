@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工業電子丙級量測題計算練習</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .subscript { font-size: 0.75em; vertical-align: sub; }
+        .fraction { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; padding: 0 4px; }
+        .fraction-top { border-bottom: 1px solid currentColor; padding-bottom: 1px; }
+        .fraction-bottom { padding-top: 1px; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-12">
+
+    <!-- 頁首 -->
+    <header class="bg-indigo-700 text-white shadow-lg py-6 mb-8">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold flex items-center gap-2">
+                    ⚡ 工業電子丙級 - 量測題計算練習
+                </h1>
+                <p class="text-indigo-200 text-sm mt-1">模擬真實術科測驗電路：分壓計算與支路電流演練</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="generateRandomQuiz()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-lg shadow transition">
+                    🎲 隨機出題
+                </button>
+                <button onclick="resetValues()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg shadow transition">
+                    🔄 重置數值
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- 左側：電路圖與公式指南 (7 欄) -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+            
+            <!-- SVG 電路圖區域 -->
+            <div class="bg-white rounded-xl p-6 shadow-md border border-slate-200">
+                <h2 class="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
+                    📐 測驗電路圖 (依照丙級試題排列)
+                </h2>
+                
+                <div class="w-full flex justify-center bg-slate-50 p-4 rounded-lg border border-slate-200 overflow-x-auto">
+                    <svg width="480" height="360" viewBox="0 0 480 360" class="max-w-full h-auto">
+                        <!-- 總電源 Vcc (最右側) -->
+                        <g transform="translate(420, 100)">
+                            <line x1="0" y1="0" x2="0" y2="60" stroke="#dc2626" stroke-width="2"/>
+                            <!-- 長線 (+) -->
+                            <line x1="-15" y1="60" x2="15" y2="60" stroke="#dc2626" stroke-width="3"/>
+                            <!-- 短線 (-) -->
+                            <line x1="-8" y1="70" x2="8" y2="70" stroke="#dc2626" stroke-width="2"/>
+                            <!-- 長線 -->
+                            <line x1="-15" y1="80" x2="15" y2="80" stroke="#dc2626" stroke-width="3"/>
+                            <!-- 短線 -->
+                            <line x1="-8" y1="90" x2="8" y2="90" stroke="#dc2626" stroke-width="2"/>
+                            <line x1="0" y1="90" x2="0" y2="150" stroke="#dc2626" stroke-width="2"/>
+                            <text x="25" y="70" fill="#dc2626" font-weight="bold" font-size="14">V<tspan font-size="10" dy="4">cc</tspan></text>
+                            <text x="25" y="90" fill="#dc2626" font-size="12" id="svg-vcc-val">12V</text>
+                        </g>
+
+                        <!-- 主線路 (紅: 正極/Vcc, 藍: 地線) -->
+                        <path d="M 80,40 L 420,40 L 420,100" fill="none" stroke="#dc2626" stroke-width="2"/>
+                        <path d="M 80,310 L 420,310 L 420,250" fill="none" stroke="#2563eb" stroke-width="2"/>
+                        
+                        <!-- 測驗開關 SW2 -->
+                        <circle cx="340" cy="40" r="3" fill="#dc2626"/>
+                        <line x1="340" y1="40" x2="365" y2="25" stroke="#dc2626" stroke-width="2"/>
+                        <circle cx="370" cy="40" r="3" fill="#dc2626"/>
+                        <text x="345" y="20" fill="#475569" font-size="12" font-weight="bold">SW2</text>
+
+                        <!-- 第一支路 (I3: RL5, R10, R11) - X = 100 -->
+                        <g id="branch3">
+                            <!-- 電流箭頭 I3 -->
+                            <path d="M 80,40 L 80,55" fill="none" stroke="#dc2626" stroke-width="2"/>
+                            <path d="M 75,50 L 80,60 L 85,50" fill="none" stroke="#dc2626" stroke-width="2"/>
+                            <text x="50" y="55" fill="#dc2626" font-weight="bold" font-size="12">I<tspan font-size="9" dy="2">3</tspan></text>
+
+                            <!-- RL5 電阻 -->
+                            <path d="M 80,60 L 80,70 L 73,74 L 87,82 L 73,90 L 87,98 L 73,106 L 87,114 L 80,118 L 80,125" fill="none" stroke="#334155" stroke-width="2"/>
+                            <text x="95" y="90" fill="#334155" font-size="11" font-weight="bold">RL5</text>
+                            <text x="95" y="105" fill="#64748b" font-size="10" id="svg-rl5-val">1kΩ</text>
+
+                            <!-- 測量點 N -->
+                            <circle cx="80" cy="125" r="4" fill="#ef4444"/>
+                            <path d="M 80,125 L 100,125 L 108,120 L 115,125 L 108,130 Z" fill="#ef4444"/>
+                            <text x="120" y="129" fill="#ef4444" font-weight="bold" font-size="12">N</text>
+
+                            <!-- R10 電阻 -->
+                            <path d="M 80,125 L 80,150 L 73,154 L 87,162 L 73,170 L 87,178 L 73,186 L 87,194 L 80,198 L 80,210" fill="none" stroke="#334155" stroke-width="2"/>
+                            <text x="95" y="170" fill="#334155" font-size="11" font-weight="bold">R10</text>
+                            <text x="95" y="185" fill="#64748b" font-size="10" id="svg-r10-val">10kΩ</text>
+
+                            <!-- 測量點 O -->
+                            <circle cx="80" cy="210" r="4" fill="#ef4444"/>
+                            <path d="M 80,210 L 100,210 L 108,205 L 115,210 L 108,215 Z" fill="#ef4444"/>
+                            <text x="120" y="214" fill="#ef4444" font-weight="bold" font-size="12">O</text>
+
+                            <!-- R11 電阻 -->
+                            <path d="M 80,210 L 80,235 L 73,239 L 87,247 L 73,255 L 87,263 L 73,271 L 87,279 L 80,283 L 80,310" fill="none" stroke="#334155" stroke-width="2"/>
+                            <text x="95" y="255" fill="#334155" font-size="11" font-weight="bold">R11</text>
+                            <text x="95" y="270" fill="#64748b" font-size="10" id="svg-r11-val">2.2kΩ</text>
+                        </g>
+
+                        <!-- 第二支路 (I2: R8, R9, RL4) - X = 200 -->
+                        <g id="branch2">
+                            <!-- 電流箭頭 I2 -->
+                            <path d="M 200,40 L 200,55" fill="none" stroke="#dc2626" stroke-width="2"/>
+                            <path d="M 195,50 L 200,60 L 205,50" fill="none" stroke="#dc2626" stroke-width="2"/>
+                            <text x="170" y="55" fill="#dc2626" font-weight="bold" font-size="12">I<tspan font-size="9" dy="2">2</tspan></text>
+
+                            <!-- R8 電阻 -->
+                            <path d="M 200,60 L 200,70 L 193,74 L 207,82 L 193,90 L 207,98 L 193,106 L 207,114 L 200,118 L 200,125" fill="none" stroke="#334155" stroke-width="2"/>
+                            <text x="215" y="90" fill="#334155" font-size="11" font-weight="bold">R8</text>
+                            <text x="215" y="105" fill="#64748b" font-size="10" id="svg-r8-val">1.5kΩ</text>
+
+                            <!-- 測量點 L -->
+                            <circle cx="200" cy="125" r="4" fill="#ef4444"/>
+                            <path d="M 200,125 L 220,125 L 228,120 L 235,125 L 228,130 Z" fill="#ef4444"/>
+                            <text x="240" y="129" fill="#ef4444" font-weight="bold" font-size="12">L</text>
+
+                            <!-- R9 電阻 -->
+                            <path d="M 200,125 L 200,150 L 193,154 L 207,162 L 193,170 L 207,178 L 193,186 L 207,194 L 200,198 L 200,210" fill="none" stroke="#334155" stroke-width="2"/>
+                            <text x="215" y="170" fill="#334155" font-size="11" font-weight="bold">R9</text>
+                            <text x="215" y="185" fill="#64748b" font-size="10" id="svg-r9-val">2.2kΩ</text>
+
+                            <!-- 測量點 M -->
+                            <circle cx="200" cy="210" r="4" fill="#ef4444"/>
+                            <path d="M 200,210 L 220,210 L 228,205 L 235,210 L 228,215 Z" fill="#ef4444"/>
+                            <text x="240" y="214" fill="#ef4444" font-weight="bold" font-size="12">M</text>
+
+                            <!-- RL4 電阻 -->
+                            <path d="M 200,210 L 200,235 L 193,239 L 207,247 L 193,255 L 207,263 L 193,271 L 207,279 L 200,283 L 200,310" fill="none" stroke="#334155" stroke-width="2"/>
+                            <text x="215" y="255" fill="#334155" font-size="11" font-weight="bold">RL4</text>
+                            <text x="215" y="270" fill="#64748b" font-size="10" id="svg-rl4-val">1kΩ</text>
+                        </g>
+
+                        <!-- 第三支路 (I1: R6, RL3, R7) - X = 300 -->
+                        <g id="branch1">
+                            <!-- 電流箭頭 I1 -->
+                            <path d="M 300,40 L 300,55" fill="none" stroke="#dc2626" stroke-width="2"/>
+                            <path d="M 295,50 L 300,60 L 305,50" fill="none" stroke="#dc2626" stroke-width="2"/>
+                            <text x="270" y="55" fill="#dc2626" font-weight="bold" font-size="12">I<tspan font-size="9" dy="2">1</tspan></text>
+
+                            <!-- R6 電阻 -->
+                            <path d="M 300,60 L 300,70 L 293,74 L 307,82 L 293,90 L 307,98 L 293,106 L 307,114 L 300,118 L 300,125" fill="none" stroke="#334155" stroke-width="2"/>
+                            <text x="315" y="90" fill="#334155" font-size="11" font-weight="bold">R6</text>
+                            <text x="315" y="105" fill="#64748b" font-size="10" id="svg-r6-val">150Ω</text>
+
+                            <!-- 測量點 J -->
+                            <circle cx="300" cy="125" r="4" fill="#ef4444"/>
+                            <path d="M 300,125 L 320,125 L 328,120 L 335,125 L 328,130 Z" fill="#ef4444"/>
+                            <text x="340" y="129" fill="#ef4444" font-weight="bold" font-size="12">J</text>
+
+                            <!-- RL3 電阻 -->
+                            <path d="M 300,125 L 300,150 L 293,154 L 307,162 L 293,170 L 307,178 L 293,186 L 307,194 L 300,198 L 300,210" fill="none" stroke="#334155" stroke-width="2"/>
+                            <text x="315" y="170" fill="#334155" font-size="11" font-weight="bold">RL3</text>
+                            <text x="315" y="185" fill="#64748b" font-size="10" id="svg-rl3-val">1kΩ</text>
+
+                            <!-- 測量點 K -->
+                            <circle cx="300" cy="210" r="4" fill="#ef4444"/>
+                            <path d="M 300,210 L 320,210 L 328,205 L 335,210 L 328,215 Z" fill="#ef4444"/>
+                            <text x="340" y="214" fill="#ef4444" font-weight="bold" font-size="12">K</text>
+
+                            <!-- R7 電阻 -->
+                            <path d="M 300,210 L 300,235 L 293,239 L 307,247 L 293,255 L 307,263 L 293,271 L 307,279 L 300,283 L 300,310" fill="none" stroke="#334155" stroke-width="2"/>
+                            <text x="315" y="255" fill="#334155" font-size="11" font-weight="bold">R7</text>
+                            <text x="315" y="270" fill="#64748b" font-size="10" id="svg-r7-val">1kΩ</text>
+                        </g>
+
+                        <!-- 接地端 GND -->
+                        <line x1="300" y1="310" x2="300" y2="330" stroke="#2563eb" stroke-width="2"/>
+                        <line x1="285" y1="330" x2="315" y2="330" stroke="#2563eb" stroke-width="3"/>
+                        <line x1="290" y1="335" x2="310" y2="335" stroke="#2563eb" stroke-width="2"/>
+                        <line x1="295" y1="340" x2="305" y2="340" stroke="#2563eb" stroke-width="1"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- 計算指南與公式卡片 -->
+            <div class="bg-amber-50 rounded-xl p-5 border border-amber-200 shadow-sm text-sm">
+                <h3 class="font-bold text-amber-800 text-base mb-2 flex items-center gap-2">
+                    🎓 丙級量測計算指南
+                </h3>
+                <ul class="list-disc list-inside space-y-2 text-amber-900">
+                    <li>
+                        <strong>節點電位對地：</strong> 節點電壓即為該節點下方「所有串聯電阻」之總壓降。
+                        例如：<span class="font-semibold text-amber-950">V<span class="subscript">J</span> = V<span class="subscript">cc</span> × 
+                        <span class="fraction"><span class="fraction-top">RL<span class="subscript">3</span> + R<span class="subscript">7</span></span><span class="fraction-bottom">R<span class="subscript">6</span> + RL<span class="subscript">3</span> + R<span class="subscript">7</span></span></span></span>
+                    </li>
+                    <li>
+                        <strong>支路電流：</strong> 
+                        <span class="font-semibold text-amber-950">I = 
+                        <span class="fraction"><span class="fraction-top">V<span class="subscript">cc</span></span><span class="fraction-bottom">R<span class="subscript">上</span> + R<span class="subscript">中</span> + R<span class="subscript">下</span></span></span></span>。答題填寫單位為毫安培 (mA)。
+                    </li>
+                    <li><strong>答題標準：</strong> 預設允許 ±2% 誤差範圍，建議小數點後計算至第二位。</li>
+                </ul>
+            </div>
+
+            <!-- 參數手動自訂面板 -->
+            <div class="bg-white rounded-xl p-5 shadow-md border border-slate-200">
+                <h3 class="font-bold text-slate-700 mb-3 flex items-center gap-2">
+                    ⚙️ 手動設定元件數值 (黃色輸入框)
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                    <div>
+                        <label class="block text-slate-500 font-semibold text-xs mb-1">Vcc 電壓 (V)</label>
+                        <input type="number" id="param-vcc" value="12" step="0.1" class="w-full p-2 border rounded border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-amber-50" onchange="updateParameters()">
+                    </div>
+                    <div>
+                        <label class="block text-slate-500 font-semibold text-xs mb-1">R6 (Ω)</label>
+                        <input type="number" id="param-r6" value="150" class="w-full p-2 border rounded border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-amber-50" onchange="updateParameters()">
+                    </div>
+                    <div>
+                        <label class="block text-slate-500 font-semibold text-xs mb-1">RL3 (Ω)</label>
+                        <input type="number" id="param-rl3" value="1000" class="w-full p-2 border rounded border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-amber-50" onchange="updateParameters()">
+                    </div>
+                    <div>
+                        <label class="block text-slate-500 font-semibold text-xs mb-1">R7 (Ω)</label>
+                        <input type="number" id="param-r7" value="1000" class="w-full p-2 border rounded border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-amber-50" onchange="updateParameters()">
+                    </div>
+                    <div>
+                        <label class="block text-slate-500 font-semibold text-xs mb-1">R8 (Ω)</label>
+                        <input type="number" id="param-r8" value="1500" class="w-full p-2 border rounded border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-amber-50" onchange="updateParameters()">
+                    </div>
+                    <div>
+                        <label class="block text-slate-500 font-semibold text-xs mb-1">R9 (Ω)</label>
+                        <input type="number" id="param-r9" value="2200" class="w-full p-2 border rounded border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-amber-50" onchange="updateParameters()">
+                    </div>
+                    <div>
+                        <label class="block text-slate-500 font-semibold text-xs mb-1">RL4 (Ω)</label>
+                        <input type="number" id="param-rl4" value="1000" class="w-full p-2 border rounded border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-amber-50" onchange="updateParameters()">
+                    </div>
+                    <div>
+                        <label class="block text-slate-500 font-semibold text-xs mb-1">RL5 (Ω)</label>
+                        <input type="number" id="param-rl5" value="1000" class="w-full p-2 border rounded border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-amber-50" onchange="updateParameters()">
+                    </div>
+                    <div>
+                        <label class="block text-slate-500 font-semibold text-xs mb-1">R10 (Ω)</label>
+                        <input type="number" id="param-r10" value="10000" class="w-full p-2 border rounded border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-amber-50" onchange="updateParameters()">
+                    </div>
+                    <div>
+                        <label class="block text-slate-500 font-semibold text-xs mb-1">R11 (Ω)</label>
+                        <input type="number" id="param-r11" value="2200" class="w-full p-2 border rounded border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-amber-50" onchange="updateParameters()">
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- 右側：答題區與結果 (5 欄) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+
+            <!-- 答題卡片 -->
+            <div class="bg-white rounded-xl p-6 shadow-md border border-slate-200">
+                <h2 class="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
+                    📝 量測數值演練答題區
+                </h2>
+
+                <form id="quiz-form" onsubmit="checkAnswers(event)" class="space-y-4">
+                    
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">【第一部分：測量點對地電位 (V)】</div>
+
+                    <!-- Point J -->
+                    <div class="flex items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <label for="ans-vj" class="font-semibold text-slate-700 text-sm flex items-center gap-1.5">
+                            <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded font-bold">Point J</span>
+                            V<span class="subscript">J</span> 電位
+                        </label>
+                        <div class="flex items-center gap-1">
+                            <input type="number" step="0.01" id="ans-vj" class="w-28 p-1.5 text-right border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500" placeholder="對地電位">
+                            <span class="text-slate-500 text-sm font-bold w-6">V</span>
+                        </div>
+                    </div>
+
+                    <!-- Point K -->
+                    <div class="flex items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <label for="ans-vk" class="font-semibold text-slate-700 text-sm flex items-center gap-1.5">
+                            <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded font-bold">Point K</span>
+                            V<span class="subscript">K</span> 電位
+                        </label>
+                        <div class="flex items-center gap-1">
+                            <input type="number" step="0.01" id="ans-vk" class="w-28 p-1.5 text-right border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500" placeholder="對地電位">
+                            <span class="text-slate-500 text-sm font-bold w-6">V</span>
+                        </div>
+                    </div>
+
+                    <!-- Point L -->
+                    <div class="flex items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <label for="ans-vl" class="font-semibold text-slate-700 text-sm flex items-center gap-1.5">
+                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-xs rounded font-bold">Point L</span>
+                            V<span class="subscript">L</span> 電位
+                        </label>
+                        <div class="flex items-center gap-1">
+                            <input type="number" step="0.01" id="ans-vl" class="w-28 p-1.5 text-right border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500" placeholder="對地電位">
+                            <span class="text-slate-500 text-sm font-bold w-6">V</span>
+                        </div>
+                    </div>
+
+                    <!-- Point M -->
+                    <div class="flex items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <label for="ans-vm" class="font-semibold text-slate-700 text-sm flex items-center gap-1.5">
+                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-xs rounded font-bold">Point M</span>
+                            V<span class="subscript">M</span> 電位
+                        </label>
+                        <div class="flex items-center gap-1">
+                            <input type="number" step="0.01" id="ans-vm" class="w-28 p-1.5 text-right border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500" placeholder="對地電位">
+                            <span class="text-slate-500 text-sm font-bold w-6">V</span>
+                        </div>
+                    </div>
+
+                    <!-- Point N -->
+                    <div class="flex items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <label for="ans-vn" class="font-semibold text-slate-700 text-sm flex items-center gap-1.5">
+                            <span class="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded font-bold">Point N</span>
+                            V<span class="subscript">N</span> 電位
+                        </label>
+                        <div class="flex items-center gap-1">
+                            <input type="number" step="0.01" id="ans-vn" class="w-28 p-1.5 text-right border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500" placeholder="對地電位">
+                            <span class="text-slate-500 text-sm font-bold w-6">V</span>
+                        </div>
+                    </div>
+
+                    <!-- Point O -->
+                    <div class="flex items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <label for="ans-vo" class="font-semibold text-slate-700 text-sm flex items-center gap-1.5">
+                            <span class="px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded font-bold">Point O</span>
+                            V<span class="subscript">O</span> 電位
+                        </label>
+                        <div class="flex items-center gap-1">
+                            <input type="number" step="0.01" id="ans-vo" class="w-28 p-1.5 text-right border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500" placeholder="對地電位">
+                            <span class="text-slate-500 text-sm font-bold w-6">V</span>
+                        </div>
+                    </div>
+
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider pt-2 mb-1">【第二部分：各支路總電流 (mA)】</div>
+
+                    <!-- Current I1 -->
+                    <div class="flex items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <label for="ans-i1" class="font-semibold text-slate-700 text-sm">
+                            支路電流 I<span class="subscript">1</span>
+                        </label>
+                        <div class="flex items-center gap-1">
+                            <input type="number" step="0.01" id="ans-i1" class="w-28 p-1.5 text-right border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500" placeholder="毫安培">
+                            <span class="text-slate-500 text-sm font-bold w-6">mA</span>
+                        </div>
+                    </div>
+
+                    <!-- Current I2 -->
+                    <div class="flex items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <label for="ans-i2" class="font-semibold text-slate-700 text-sm">
+                            支路電流 I<span class="subscript">2</span>
+                        </label>
+                        <div class="flex items-center gap-1">
+                            <input type="number" step="0.01" id="ans-i2" class="w-28 p-1.5 text-right border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500" placeholder="毫安培">
+                            <span class="text-slate-500 text-sm font-[#64748b] font-bold w-6">mA</span>
+                        </div>
+                    </div>
+
+                    <!-- Current I3 -->
+                    <div class="flex items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <label for="ans-i3" class="font-semibold text-slate-700 text-sm">
+                            支路電流 I<span class="subscript">3</span>
+                        </label>
+                        <div class="flex items-center gap-1">
+                            <input type="number" step="0.01" id="ans-i3" class="w-28 p-1.5 text-right border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500" placeholder="毫安培">
+                            <span class="text-slate-500 text-sm font-bold w-6">mA</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg shadow-md transition text-center flex justify-center items-center gap-2">
+                            ✅ 送出答案並核對
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 詳細解答卡片 (對答案後顯示) -->
+            <div id="solution-card" class="bg-white rounded-xl p-6 shadow-md border border-slate-200 hidden">
+                <h3 class="text-lg font-bold text-slate-800 mb-3 border-b pb-2 flex items-center justify-between">
+                    <span>💡 詳細計算步驟與答案</span>
+                    <span id="score-badge" class="text-xs px-2.5 py-1 rounded-full font-bold"></span>
+                </h3>
+                <div id="solution-content" class="space-y-3 text-sm text-slate-600 font-mono"></div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- 浮動 / 可折疊計算機 -->
+    <div id="calc-container" class="fixed bottom-4 right-4 z-50 transition-all duration-300 transform">
+        <!-- 開啟計算機按鈕 (當隱藏時) -->
+        <button id="calc-open-btn" onclick="toggleCalculator()" class="bg-slate-900 hover:bg-slate-800 text-white p-3.5 rounded-full shadow-2xl flex items-center gap-2 font-bold text-sm">
+            🧮 簡易計算機
+        </button>
+
+        <!-- 計算機主體 -->
+        <div id="calculator" class="bg-slate-900 text-white rounded-2xl p-4 shadow-2xl w-72 border border-slate-700 hidden flex-col">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-bold text-slate-400">工程簡易計算機</span>
+                <button onclick="toggleCalculator()" class="text-slate-400 hover:text-white font-bold text-lg px-1">✕</button>
+            </div>
+            
+            <!-- 螢幕 -->
+            <div class="bg-slate-950 p-3 rounded-lg text-right mb-3">
+                <div id="calc-expr" class="text-xs text-slate-500 h-4 overflow-hidden"></div>
+                <div id="calc-display" class="text-2xl font-mono font-bold text-amber-400 truncate">0</div>
+            </div>
+
+            <!-- 按鈕組 -->
+            <div class="grid grid-cols-4 gap-2 text-sm font-bold">
+                <button onclick="calcClear()" class="bg-red-500/20 text-red-400 hover:bg-red-500/30 p-2.5 rounded-lg">C</button>
+                <button onclick="calcOp('/')" class="bg-slate-800 hover:bg-slate-700 text-indigo-400 p-2.5 rounded-lg">÷</button>
+                <button onclick="calcOp('*')" class="bg-slate-800 hover:bg-slate-700 text-indigo-400 p-2.5 rounded-lg">×</button>
+                <button onclick="calcBackspace()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2.5 rounded-lg">⌫</button>
+
+                <button onclick="calcNum('7')" class="bg-slate-800 hover:bg-slate-700 p-2.5 rounded-lg">7</button>
+                <button onclick="calcNum('8')" class="bg-slate-800 hover:bg-slate-700 p-2.5 rounded-lg">8</button>
+                <button onclick="calcNum('9')" class="bg-slate-800 hover:bg-slate-700 p-2.5 rounded-lg">9</button>
+                <button onclick="calcOp('-')" class="bg-slate-800 hover:bg-slate-700 text-indigo-400 p-2.5 rounded-lg">-</button>
+
+                <button onclick="calcNum('4')" class="bg-slate-800 hover:bg-slate-700 p-2.5 rounded-lg">4</button>
+                <button onclick="calcNum('5')" class="bg-slate-800 hover:bg-slate-700 p-2.5 rounded-lg">5</button>
+                <button onclick="calcNum('6')" class="bg-slate-800 hover:bg-slate-700 p-2.5 rounded-lg">6</button>
+                <button onclick="calcOp('+')" class="bg-slate-800 hover:bg-slate-700 text-indigo-400 p-2.5 rounded-lg">+</button>
+
+                <button onclick="calcNum('1')" class="bg-slate-800 hover:bg-slate-700 p-2.5 rounded-lg">1</button>
+                <button onclick="calcNum('2')" class="bg-slate-800 hover:bg-slate-700 p-2.5 rounded-lg">2</button>
+                <button onclick="calcNum('3')" class="bg-slate-800 hover:bg-slate-700 p-2.5 rounded-lg">3</button>
+                <button onclick="calcEquals()" class="bg-indigo-600 hover:bg-indigo-500 text-white row-span-2 rounded-lg flex items-center justify-center text-lg">=</button>
+
+                <button onclick="calcNum('0')" class="col-span-2 bg-slate-800 hover:bg-slate-700 p-2.5 rounded-lg">0</button>
+                <button onclick="calcNum('.')" class="bg-slate-800 hover:bg-slate-700 p-2.5 rounded-lg">.</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 邏輯 -->
+    <script>
+        // 當前計算電路參數
+        let circuitParams = {
+            vcc: 12,
+            r6: 150,
+            rl3: 1000,
+            r7: 1000,
+            r8: 1500,
+            r9: 2200,
+            rl4: 1000,
+            rl5: 1000,
+            r10: 10000,
+            r11: 2200
+        };
+
+        // 計算標準答案
+        function calculateStandardAnswers() {
+            const { vcc, r6, rl3, r7, r8, r9, rl4, rl5, r10, r11 } = circuitParams;
+
+            // 總串聯電阻
+            const r_branch1 = r6 + rl3 + r7;
+            const r_branch2 = r8 + r9 + rl4;
+            const r_branch3 = rl5 + r10 + r11;
+
+            // 支路電流 (mA)
+            const i1 = (vcc / r_branch1) * 1000;
+            const i2 = (vcc / r_branch2) * 1000;
+            const i3 = (vcc / r_branch3) * 1000;
+
+            // 測量點對地電位 (V)
+            const vj = vcc * ((rl3 + r7) / r_branch1);
+            const vk = vcc * (r7 / r_branch1);
+
+            const vl = vcc * ((r9 + rl4) / r_branch2);
+            const vm = vcc * (rl4 / r_branch2);
+
+            const vn = vcc * ((r10 + r11) / r_branch3);
+            const vo = vcc * (r11 / r_branch3);
+
+            return {
+                vj, vk, vl, vm, vn, vo,
+                i1, i2, i3,
+                r_branch1, r_branch2, r_branch3
+            };
+        }
+
+        // 更新介面 UI 與 SVG 標籤
+        function updateUI() {
+            // 更新 SVG 圖表數值文字
+            document.getElementById('svg-vcc-val').textContent = circuitParams.vcc + 'V';
+            document.getElementById('svg-r6-val').textContent = formatResistor(circuitParams.r6);
+            document.getElementById('svg-rl3-val').textContent = formatResistor(circuitParams.rl3);
+            document.getElementById('svg-r7-val').textContent = formatResistor(circuitParams.r7);
+
+            document.getElementById('svg-r8-val').textContent = formatResistor(circuitParams.r8);
+            document.getElementById('svg-r9-val').textContent = formatResistor(circuitParams.r9);
+            document.getElementById('svg-rl4-val').textContent = formatResistor(circuitParams.rl4);
+
+            document.getElementById('svg-rl5-val').textContent = formatResistor(circuitParams.rl5);
+            document.getElementById('svg-r10-val').textContent = formatResistor(circuitParams.r10);
+            document.getElementById('svg-r11-val').textContent = formatResistor(circuitParams.r11);
+        }
+
+        function formatResistor(val) {
+            if (val >= 1000) {
+                return (val / 1000) + 'kΩ';
+            }
+            return val + 'Ω';
+        }
+
+        // 當用戶手動變更輸入框數值
+        function updateParameters() {
+            circuitParams.vcc = parseFloat(document.getElementById('param-vcc').value) || 0;
+            circuitParams.r6 = parseFloat(document.getElementById('param-r6').value) || 0;
+            circuitParams.rl3 = parseFloat(document.getElementById('param-rl3').value) || 0;
+            circuitParams.r7 = parseFloat(document.getElementById('param-r7').value) || 0;
+            circuitParams.r8 = parseFloat(document.getElementById('param-r8').value) || 0;
+            circuitParams.r9 = parseFloat(document.getElementById('param-r9').value) || 0;
+            circuitParams.rl4 = parseFloat(document.getElementById('param-rl4').value) || 0;
+            circuitParams.rl5 = parseFloat(document.getElementById('param-rl5').value) || 0;
+            circuitParams.r10 = parseFloat(document.getElementById('param-r10').value) || 0;
+            circuitParams.r11 = parseFloat(document.getElementById('param-r11').value) || 0;
+
+            updateUI();
+            document.getElementById('solution-card').classList.add('hidden');
+        }
+
+        // 重置為預設題目數值
+        function resetValues() {
+            circuitParams = {
+                vcc: 12,
+                r6: 150,
+                rl3: 1000,
+                r7: 1000,
+                r8: 1500,
+                r9: 2200,
+                rl4: 1000,
+                rl5: 1000,
+                r10: 10000,
+                r11: 2200
+            };
+
+            document.getElementById('param-vcc').value = circuitParams.vcc;
+            document.getElementById('param-r6').value = circuitParams.r6;
+            document.getElementById('param-rl3').value = circuitParams.rl3;
+            document.getElementById('param-r7').value = circuitParams.r7;
+            document.getElementById('param-r8').value = circuitParams.r8;
+            document.getElementById('param-r9').value = circuitParams.r9;
+            document.getElementById('param-rl4').value = circuitParams.rl4;
+            document.getElementById('param-rl5').value = circuitParams.rl5;
+            document.getElementById('param-r10').value = circuitParams.r10;
+            document.getElementById('param-r11').value = circuitParams.r11;
+
+            clearAnswerInputs();
+            updateUI();
+        }
+
+        // 隨機產生考題數值
+        function generateRandomQuiz() {
+            const vccList = [5, 9, 12, 15, 24];
+            const resList = [100, 150, 220, 330, 470, 560, 680, 1000, 1500, 2200, 3300, 4700, 10000];
+
+            circuitParams.vcc = vccList[Math.floor(Math.random() * vccList.length)];
+            circuitParams.r6 = resList[Math.floor(Math.random() * resList.length)];
+            circuitParams.rl3 = resList[Math.floor(Math.random() * resList.length)];
+            circuitParams.r7 = resList[Math.floor(Math.random() * resList.length)];
+
+            circuitParams.r8 = resList[Math.floor(Math.random() * resList.length)];
+            circuitParams.r9 = resList[Math.floor(Math.random() * resList.length)];
+            circuitParams.rl4 = resList[Math.floor(Math.random() * resList.length)];
+
+            circuitParams.rl5 = resList[Math.floor(Math.random() * resList.length)];
+            circuitParams.r10 = resList[Math.floor(Math.random() * resList.length)];
+            circuitParams.r11 = resList[Math.floor(Math.random() * resList.length)];
+
+            document.getElementById('param-vcc').value = circuitParams.vcc;
+            document.getElementById('param-r6').value = circuitParams.r6;
+            document.getElementById('param-rl3').value = circuitParams.rl3;
+            document.getElementById('param-r7').value = circuitParams.r7;
+            document.getElementById('param-r8').value = circuitParams.r8;
+            document.getElementById('param-r9').value = circuitParams.r9;
+            document.getElementById('param-rl4').value = circuitParams.rl4;
+            document.getElementById('param-rl5').value = circuitParams.rl5;
+            document.getElementById('param-r10').value = circuitParams.r10;
+            document.getElementById('param-r11').value = circuitParams.r11;
+
+            clearAnswerInputs();
+            updateUI();
+        }
+
+        function clearAnswerInputs() {
+            const inputs = ['ans-vj', 'ans-vk', 'ans-vl', 'ans-vm', 'ans-vn', 'ans-vo', 'ans-i1', 'ans-i2', 'ans-i3'];
+            inputs.forEach(id => {
+                const el = document.getElementById(id);
+                el.value = '';
+                el.classList.remove('border-green-500', 'border-red-500', 'bg-green-50', 'bg-red-50');
+            });
+            document.getElementById('solution-card').classList.add('hidden');
+        }
+
+        // 核對答案
+        function checkAnswers(e) {
+            e.preventDefault();
+            const answers = calculateStandardAnswers();
+
+            const items = [
+                { id: 'ans-vj', key: 'vj', label: 'V_J', unit: 'V' },
+                { id: 'ans-vk', key: 'vk', label: 'V_K', unit: 'V' },
+                { id: 'ans-vl', key: 'vl', label: 'V_L', unit: 'V' },
+                { id: 'ans-vm', key: 'vm', label: 'V_M', unit: 'V' },
+                { id: 'ans-vn', key: 'vn', label: 'V_N', unit: 'V' },
+                { id: 'ans-vo', key: 'vo', label: 'V_O', unit: 'V' },
+                { id: 'ans-i1', key: 'i1', label: 'I_1', unit: 'mA' },
+                { id: 'ans-i2', key: 'i2', label: 'I_2', unit: 'mA' },
+                { id: 'ans-i3', key: 'i3', label: 'I_3', unit: 'mA' }
+            ];
+
+            let correctCount = 0;
+
+            items.forEach(item => {
+                const inputEl = document.getElementById(item.id);
+                const userVal = parseFloat(inputEl.value);
+                const stdVal = answers[item.key];
+
+                // 容許 2% 誤差或絕對誤差 0.05
+                const tolerance = Math.max(Math.abs(stdVal * 0.02), 0.05);
+
+                inputEl.classList.remove('border-green-500', 'border-red-500', 'bg-green-50', 'bg-red-50');
+
+                if (!isNaN(userVal) && Math.abs(userVal - stdVal) <= tolerance) {
+                    correctCount++;
+                    inputEl.classList.add('border-green-500', 'bg-green-50');
+                } else {
+                    inputEl.classList.add('border-red-500', 'bg-red-50');
+                }
+            });
+
+            // 顯示解答與分數
+            const solutionCard = document.getElementById('solution-card');
+            const solutionContent = document.getElementById('solution-content');
+            const scoreBadge = document.getElementById('score-badge');
+
+            scoreBadge.textContent = `答對 ${correctCount} / ${items.length} 題`;
+            if (correctCount === items.length) {
+                scoreBadge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-green-100 text-green-800";
+            } else {
+                scoreBadge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-amber-100 text-amber-800";
+            }
+
+            solutionContent.innerHTML = `
+                <div class="space-y-2 border-b pb-2">
+                    <p class="text-xs text-slate-500 font-sans font-bold">【支路一：I1, VJ, VK】</p>
+                    <p>• R_branch1 = ${circuitParams.r6} + ${circuitParams.rl3} + ${circuitParams.r7} = <strong>${answers.r_branch1} Ω</strong></p>
+                    <p>• I1 = ${circuitParams.vcc} / ${answers.r_branch1} = <strong>${answers.i1.toFixed(3)} mA</strong></p>
+                    <p>• V_J = ${circuitParams.vcc} × (${circuitParams.rl3 + circuitParams.r7} / ${answers.r_branch1}) = <strong>${answers.vj.toFixed(2)} V</strong></p>
+                    <p>• V_K = ${circuitParams.vcc} × (${circuitParams.r7} / ${answers.r_branch1}) = <strong>${answers.vk.toFixed(2)} V</strong></p>
+                </div>
+
+                <div class="space-y-2 border-b pb-2 pt-1">
+                    <p class="text-xs text-slate-500 font-sans font-bold">【支路二：I2, VL, VM】</p>
+                    <p>• R_branch2 = ${circuitParams.r8} + ${circuitParams.r9} + ${circuitParams.rl4} = <strong>${answers.r_branch2} Ω</strong></p>
+                    <p>• I2 = ${circuitParams.vcc} / ${answers.r_branch2} = <strong>${answers.i2.toFixed(3)} mA</strong></p>
+                    <p>• V_L = ${circuitParams.vcc} × (${circuitParams.r9 + circuitParams.rl4} / ${answers.r_branch2}) = <strong>${answers.vl.toFixed(2)} V</strong></p>
+                    <p>• V_M = ${circuitParams.vcc} × (${circuitParams.rl4} / ${answers.r_branch2}) = <strong>${answers.vm.toFixed(2)} V</strong></p>
+                </div>
+
+                <div class="space-y-2 pt-1">
+                    <p class="text-xs text-slate-500 font-sans font-bold">【支路三：I3, VN, VO】</p>
+                    <p>• R_branch3 = ${circuitParams.rl5} + ${circuitParams.r10} + ${circuitParams.r11} = <strong>${answers.r_branch3} Ω</strong></p>
+                    <p>• I3 = ${circuitParams.vcc} / ${answers.r_branch3} = <strong>${answers.i3.toFixed(3)} mA</strong></p>
+                    <p>• V_N = ${circuitParams.vcc} × (${circuitParams.r10 + circuitParams.r11} / ${answers.r_branch3}) = <strong>${answers.vn.toFixed(2)} V</strong></p>
+                    <p>• V_O = ${circuitParams.vcc} × (${circuitParams.r11} / ${answers.r_branch3}) = <strong>${answers.vo.toFixed(2)} V</strong></p>
+                </div>
+            `;
+
+            solutionCard.classList.remove('hidden');
+        }
+
+        // 計算機控制邏輯
+        let calcExpr = "";
+        let calcCurrent = "0";
+        let isNewInput = true;
+
+        function toggleCalculator() {
+            const calc = document.getElementById('calculator');
+            const openBtn = document.getElementById('calc-open-btn');
+            
+            if (calc.classList.contains('hidden')) {
+                calc.classList.remove('hidden');
+                calc.classList.add('flex');
+                openBtn.classList.add('hidden');
+            } else {
+                calc.classList.add('hidden');
+                calc.classList.remove('flex');
+                openBtn.classList.remove('hidden');
+            }
+        }
+
+        function updateCalcDisplay() {
+            document.getElementById('calc-display').textContent = calcCurrent;
+            document.getElementById('calc-expr').textContent = calcExpr;
+        }
+
+        function calcNum(num) {
+            if (isNewInput) {
+                calcCurrent = num === '.' ? '0.' : num;
+                isNewInput = false;
+            } else {
+                if (num === '.' && calcCurrent.includes('.')) return;
+                calcCurrent += num;
+            }
+            updateCalcDisplay();
+        }
+
+        function calcOp(op) {
+            calcExpr = calcExpr + " " + calcCurrent + " " + op;
+            isNewInput = true;
+            updateCalcDisplay();
+        }
+
+        function calcClear() {
+            calcExpr = "";
+            calcCurrent = "0";
+            isNewInput = true;
+            updateCalcDisplay();
+        }
+
+        function calcBackspace() {
+            if (isNewInput) return;
+            calcCurrent = calcCurrent.slice(0, -1);
+            if (calcCurrent === "" || calcCurrent === "-") calcCurrent = "0";
+            updateCalcDisplay();
+        }
+
+        function calcEquals() {
+            try {
+                const fullExpr = (calcExpr + " " + calcCurrent).replace(/×/g, '*').replace(/÷/g, '/');
+                const result = eval(fullExpr);
+                calcExpr = "";
+                calcCurrent = Number.isInteger(result) ? result.toString() : result.toFixed(4).replace(/\.?0+$/, "");
+                isNewInput = true;
+            } catch (e) {
+                calcCurrent = "Error";
+                isNewInput = true;
+            }
+            updateCalcDisplay();
+        }
+
+        // 初始化繪製 UI
+        updateUI();
+    </script>
+</body>
+</html>
